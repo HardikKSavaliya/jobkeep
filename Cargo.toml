@@ -1,0 +1,10 @@
+[package]
+name = "jobkeep"
+version = "0.1.0"
+edition = "2024"
+description = "A high-performance async background job and queue processor for Rust"
+repository = "https://github.com/HardikKSavaliya/jobkeep"
+keywords = ["jobs", "queue", "postgres", "async", "background"]
+categories = ["asynchronous", "database"]
+
+[dependencies]
