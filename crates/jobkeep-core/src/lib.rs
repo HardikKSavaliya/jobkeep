@@ -1,14 +1,22 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+//! Core types and traits for JobKeep.
+//!
+//! This crate holds the vocabulary shared by every other JobKeep crate:
+//! job identity ([`JobId`], [`Queue`], [`Priority`]), the job lifecycle
+//! ([`State`]), the user-facing [`Job`] trait with its [`JobContext`] and
+//! [`JobError`], and the storage-facing [`NewJob`] record.
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+mod error;
+mod job;
+mod state;
+mod types;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+pub use error::JobError;
+pub use job::{Extensions, Job, JobContext, NewJob};
+pub use state::State;
+pub use types::{JobId, Priority, Queue};
+
+#[cfg(feature = "macros")]
+pub use jobkeep_macros::{job, recurring};
+
+/// Re-exported so users of [`JobContext`] don't need a direct `tokio-util` dependency.
+pub use tokio_util::sync::CancellationToken;
