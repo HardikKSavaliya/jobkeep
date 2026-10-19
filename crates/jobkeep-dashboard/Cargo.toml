@@ -1,0 +1,28 @@
+[package]
+name = "jobkeep-dashboard"
+description = "Web dashboard for JobKeep: queues, job states, retries, recurring jobs, servers"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+jobkeep-core.workspace = true
+axum.workspace = true
+tower-http.workspace = true
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "net"] }
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+uuid.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+jobkeep-memory.workspace = true
+
+[lints]
+workspace = true

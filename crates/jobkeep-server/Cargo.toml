@@ -1,0 +1,31 @@
+[package]
+name = "jobkeep-server"
+description = "JobKeep worker runtime: fetches, executes and retries jobs; runs the cron scheduler"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+jobkeep-core.workspace = true
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time", "sync", "signal"] }
+tokio-util.workspace = true
+futures.workspace = true
+async-trait.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+uuid.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+jobkeep-memory.workspace = true
+jobkeep-client.workspace = true
+tokio = { workspace = true, features = ["test-util"] }
+
+[lints]
+workspace = true

@@ -1,0 +1,38 @@
+[package]
+name = "jobkeep-cli"
+description = "Command-line tool for running JobKeep servers, the dashboard, and managing jobs"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+# `cargo install jobkeep-cli` installs a binary named `jobkeep`
+[[bin]]
+name = "jobkeep"
+path = "src/main.rs"
+
+[features]
+default = ["postgres", "dashboard"]
+postgres = ["dep:jobkeep-postgres"]
+memory = ["dep:jobkeep-memory"]
+dashboard = ["dep:jobkeep-dashboard"]
+
+[dependencies]
+jobkeep-core.workspace = true
+jobkeep-client.workspace = true
+jobkeep-server.workspace = true
+jobkeep-postgres = { workspace = true, optional = true }
+jobkeep-memory = { workspace = true, optional = true }
+jobkeep-dashboard = { workspace = true, optional = true }
+clap.workspace = true
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "signal"] }
+anyhow.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+[lints]
+workspace = true

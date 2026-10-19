@@ -1,10 +1,74 @@
-[package]
-name = "jobkeep"
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+# Shared metadata — members opt in with `field.workspace = true`
+[workspace.package]
 version = "0.1.0"
 edition = "2024"
-description = "A high-performance async background job and queue processor for Rust"
-repository = "https://github.com/HardikKSavaliya/jobkeep"
-keywords = ["jobs", "queue", "postgres", "async", "background"]
-categories = ["asynchronous", "database"]
+rust-version = "1.85"
+authors = ["Hardik Savaliya"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/hardiksavaliya/jobkeep"
+keywords = ["background-jobs", "scheduler", "cron", "queue", "hangfire"]
+categories = ["asynchronous", "concurrency"]
 
-[dependencies]
+[workspace.dependencies]
+# ── internal crates (path for local dev, version for crates.io publishing) ──
+jobkeep-core      = { path = "crates/jobkeep-core",      version = "0.1.0" }
+jobkeep-macros    = { path = "crates/jobkeep-macros",    version = "0.1.0" }
+jobkeep-client    = { path = "crates/jobkeep-client",    version = "0.1.0" }
+jobkeep-server    = { path = "crates/jobkeep-server",    version = "0.1.0" }
+jobkeep-postgres  = { path = "crates/jobkeep-postgres",  version = "0.1.0" }
+jobkeep-memory    = { path = "crates/jobkeep-memory",    version = "0.1.0" }
+jobkeep-dashboard = { path = "crates/jobkeep-dashboard", version = "0.1.0" }
+
+# ── async runtime ──
+tokio       = { version = "1", default-features = false }
+tokio-util  = { version = "0.7" }
+futures     = { version = "0.3" }
+async-trait = { version = "0.1" }
+
+# ── serialization & job data ──
+serde      = { version = "1", features = ["derive"] }
+serde_json = { version = "1" }
+chrono     = { version = "0.4", default-features = false, features = ["clock", "serde", "std"] }
+uuid       = { version = "1", features = ["v4", "v7", "serde"] }
+cron       = { version = "0.15" }
+
+# ── errors & logging ──
+thiserror          = { version = "2" }
+anyhow             = { version = "1" }
+tracing            = { version = "0.1" }
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+
+# ── storage ──
+sqlx = { version = "0.8", default-features = false, features = [
+    "runtime-tokio", "tls-rustls", "postgres", "macros",
+    "migrate", "chrono", "uuid", "json",
+] }
+dashmap = { version = "6" }
+
+# ── web dashboard ──
+axum      = { version = "0.8" }
+tower-http = { version = "0.6", features = ["trace", "cors"] }
+
+# ── cli ──
+clap = { version = "4", features = ["derive", "env"] }
+
+# ── proc macros ──
+syn         = { version = "2", features = ["full"] }
+quote       = { version = "1" }
+proc-macro2 = { version = "1" }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_debug_implementations = "warn"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

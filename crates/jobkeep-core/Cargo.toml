@@ -1,0 +1,30 @@
+[package]
+name = "jobkeep-core"
+description = "Core types and traits for JobKeep: jobs, states, storage trait, cron parsing"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[features]
+default = []
+# Re-export #[job] etc., like serde's `derive` feature
+macros = ["dep:jobkeep-macros"]
+
+[dependencies]
+jobkeep-macros = { workspace = true, optional = true }
+async-trait.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+uuid.workspace = true
+cron.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+
+[lints]
+workspace = true
