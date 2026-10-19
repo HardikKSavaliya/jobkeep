@@ -6,7 +6,7 @@ members = ["crates/*"]
 [workspace.package]
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.96.0"
 authors = ["Hardik Savaliya"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/hardiksavaliya/jobkeep"
@@ -34,7 +34,7 @@ serde      = { version = "1", features = ["derive"] }
 serde_json = { version = "1" }
 chrono     = { version = "0.4", default-features = false, features = ["clock", "serde", "std"] }
 uuid       = { version = "1", features = ["v4", "v7", "serde"] }
-cron       = { version = "0.15" }
+cron       = { version = "0.17" }
 
 # ── errors & logging ──
 thiserror          = { version = "2" }
@@ -43,7 +43,7 @@ tracing            = { version = "0.1" }
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 
 # ── storage ──
-sqlx = { version = "0.8", default-features = false, features = [
+sqlx = { version = "0.9", default-features = false, features = [
     "runtime-tokio", "tls-rustls", "postgres", "macros",
     "migrate", "chrono", "uuid", "json",
 ] }
