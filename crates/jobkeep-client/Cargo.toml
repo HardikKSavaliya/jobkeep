@@ -12,15 +12,14 @@ categories.workspace = true
 
 [dependencies]
 jobkeep-core.workspace = true
-serde.workspace = true
 serde_json.workspace = true
 chrono.workspace = true
-uuid.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
 
 [dev-dependencies]
 jobkeep-memory.workspace = true
+serde.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 
 [lints]

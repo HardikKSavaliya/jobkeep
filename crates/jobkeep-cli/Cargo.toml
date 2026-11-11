@@ -24,13 +24,15 @@ dashboard = ["dep:jobkeep-dashboard"]
 [dependencies]
 jobkeep-core.workspace = true
 jobkeep-client.workspace = true
-jobkeep-server.workspace = true
 jobkeep-postgres = { workspace = true, optional = true }
 jobkeep-memory = { workspace = true, optional = true }
 jobkeep-dashboard = { workspace = true, optional = true }
 clap.workspace = true
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "signal"] }
 anyhow.workspace = true
+chrono.workspace = true
+serde_json.workspace = true
+sqlx.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 

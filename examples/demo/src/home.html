@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JobKeep demo</title>
+<style>
+  :root { --bg: #f7f7f5; --panel: #fff; --text: #1d1d1b; --muted: #6b6b66; --line: #e4e4df;
+          --accent: #2f6fdb; --ok: #24804a; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #151514; --panel: #1e1e1c; --text: #ececea; --muted: #9a9a94; --line: #2e2e2b;
+            --accent: #6b9cf0; --ok: #5bc282; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 32px 16px; }
+  h1 { margin: 0 0 4px; font-size: 24px; }
+  .lead { color: var(--muted); margin: 0 0 20px; }
+  .open { display: inline-block; margin-bottom: 20px; padding: 8px 14px; border-radius: 8px;
+          background: var(--accent); color: #fff; text-decoration: none; font-weight: 500; }
+  .flash { padding: 10px 14px; border: 1px solid var(--ok); color: var(--ok); border-radius: 8px;
+           margin-bottom: 20px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+  form { margin: 0; }
+  .card { width: 100%; height: 100%; text-align: left; background: var(--panel); color: inherit;
+          border: 1px solid var(--line); border-radius: 10px; padding: 14px; cursor: pointer;
+          font: inherit; }
+  .card:hover { border-color: var(--accent); }
+  .card strong { display: block; margin-bottom: 4px; }
+  .card span { color: var(--muted); font-size: 13px; }
+  footer { margin-top: 28px; color: var(--muted); font-size: 13px; }
+  code { font-size: 12px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>JobKeep demo</h1>
+  <p class="lead">Add sample jobs here, then watch the worker run them in the dashboard.</p>
+  <a class="open" href="jobs" target="_blank" rel="noopener">Open the dashboard ↗</a>
+  <div class="flash" id="flash" hidden></div>
+
+  <div class="grid">
+    <form method="post" action="add/order"><button class="card">
+      <strong>Place an order</strong>
+      <span>Charges a card (sometimes times out and retries), then sends a receipt as a continuation.</span>
+    </button></form>
+    <form method="post" action="add/email"><button class="card">
+      <strong>Send an email</strong>
+      <span>Fails about a third of the time, so you'll often see a retry or two.</span>
+    </button></form>
+    <form method="post" action="add/scheduled"><button class="card">
+      <strong>Schedule an email in 30s</strong>
+      <span>Waits in "scheduled", then runs when it's due.</span>
+    </button></form>
+    <form method="post" action="add/report"><button class="card">
+      <strong>Generate a slow report</strong>
+      <span>Runs for 15 seconds. Delete it while it's processing to cancel it.</span>
+    </button></form>
+    <form method="post" action="add/failing"><button class="card">
+      <strong>Import an empty CSV</strong>
+      <span>Fails permanently with no retries. Requeue it from the dashboard.</span>
+    </button></form>
+    <form method="post" action="add/unique"><button class="card">
+      <strong>Unique import</strong>
+      <span>Click it twice: the dedupe key means only one job is stored.</span>
+    </button></form>
+    <form method="post" action="add/batch"><button class="card">
+      <strong>Add 20 mixed jobs</strong>
+      <span>Orders, emails, imports and scheduled follow-ups, to fill the dashboard.</span>
+    </button></form>
+  </div>
+
+  <footer>
+    A recurring <code>cleanup_sessions</code> job also runs every 30 seconds.
+    Stop the demo with Ctrl-C: running jobs are cancelled and go back to their queue.
+  </footer>
+</main>
+<script>
+  const params = new URLSearchParams(location.search);
+  if (params.has("added")) {
+    const flash = document.getElementById("flash");
+    const n = Number(params.get("n") || 1);
+    flash.textContent = `Added ${n} job${n === 1 ? "" : "s"} (${params.get("added")}). They show up in the dashboard right away.`;
+    flash.hidden = false;
+    history.replaceState(null, "", location.pathname);
+  }
+</script>
+</body>
+</html>

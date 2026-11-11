@@ -12,15 +12,12 @@ categories.workspace = true
 
 [dependencies]
 jobkeep-core.workspace = true
-dashmap.workspace = true
-tokio = { workspace = true, features = ["sync", "time"] }
-async-trait.workspace = true
-serde_json.workspace = true
 chrono.workspace = true
-uuid.workspace = true
-tracing.workspace = true
 
 [dev-dependencies]
+jobkeep-core = { workspace = true, features = ["testing"] }
+serde.workspace = true
+serde_json.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 
 [lints]

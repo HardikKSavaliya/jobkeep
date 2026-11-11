@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   pull_request:
   workflow_dispatch:
 
@@ -40,19 +40,37 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: jobkeep
+          POSTGRES_PASSWORD: jobkeep
+          POSTGRES_DB: jobkeep
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U jobkeep"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      # The Postgres tests fail on CI (instead of skipping) if this is unset.
+      JOBKEEP_TEST_DATABASE_URL: postgres://jobkeep:jobkeep@localhost:5432/jobkeep
     steps:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - run: cargo test --workspace
+      # --all-features so the macro tests and the conformance suite build.
+      - run: cargo test --workspace --all-features
 
   msrv:
-    name: MSRV (1.99)
+    name: MSRV (1.96)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       # Keep in sync with `rust-version` in the root Cargo.toml
-      - uses: dtolnay/rust-toolchain@1.99
+      - uses: dtolnay/rust-toolchain@1.96
       - uses: Swatinem/rust-cache@v2
       - run: cargo check --workspace --all-targets --all-features
 
