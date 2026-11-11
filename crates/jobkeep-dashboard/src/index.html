@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JobKeep</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --panel: #ffffff; --text: #1d1d1b; --muted: #6b6b66;
+    --line: #e4e4df; --accent: #2f6fdb; --danger: #c2372b; --ok: #24804a;
+    --warn: #a86a00; --chip: #efefea;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #151514; --panel: #1e1e1c; --text: #ececea; --muted: #9a9a94;
+      --line: #2e2e2b; --accent: #6b9cf0; --danger: #ef6b5f; --ok: #5bc282;
+      --warn: #e0a640; --chip: #2a2a27;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { display: flex; align-items: baseline; gap: 12px; padding: 16px 20px;
+           border-bottom: 1px solid var(--line); background: var(--panel); }
+  header h1 { margin: 0; font-size: 17px; }
+  header .status { color: var(--muted); font-size: 12px; margin-left: auto; }
+  main { padding: 16px 20px; max-width: 1200px; margin: 0 auto; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+           gap: 10px; margin-bottom: 16px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+          padding: 10px 12px; cursor: pointer; text-align: left; color: inherit; font: inherit; }
+  .card:hover { border-color: var(--accent); }
+  .card.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+  .card .n { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .card .label { color: var(--muted); font-size: 12px; text-transform: capitalize; }
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .filters input { background: var(--panel); color: var(--text); border: 1px solid var(--line);
+                   border-radius: 6px; padding: 6px 8px; font: inherit; min-width: 0; }
+  button.btn { background: var(--panel); color: var(--text); border: 1px solid var(--line);
+               border-radius: 6px; padding: 6px 10px; font: inherit; cursor: pointer; }
+  button.btn:hover { border-color: var(--accent); }
+  button.btn.danger { color: var(--danger); }
+  button.btn:disabled { opacity: .5; cursor: default; }
+  .table-wrap { background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+                overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left;
+           white-space: nowrap; }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover { background: var(--chip); }
+  tbody tr:last-child td { border-bottom: none; }
+  td.err { max-width: 320px; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+  .state { display: inline-block; padding: 1px 8px; border-radius: 999px; background: var(--chip);
+           font-size: 12px; }
+  .state.succeeded { color: var(--ok); } .state.failed { color: var(--danger); }
+  .state.processing { color: var(--accent); } .state.scheduled, .state.awaiting { color: var(--warn); }
+  .state.deleted { color: var(--muted); }
+  .empty { padding: 24px; text-align: center; color: var(--muted); }
+  .pager { display: flex; gap: 8px; align-items: center; margin-top: 10px; color: var(--muted); }
+  dialog { border: 1px solid var(--line); border-radius: 10px; background: var(--panel);
+           color: var(--text); width: min(760px, calc(100vw - 32px)); padding: 0; }
+  dialog::backdrop { background: rgba(0,0,0,.35); }
+  .dlg-head { display: flex; align-items: center; gap: 8px; padding: 14px 16px;
+              border-bottom: 1px solid var(--line); }
+  .dlg-head h2 { margin: 0; font-size: 15px; flex: 1; overflow: hidden; text-overflow: ellipsis; }
+  .dlg-body { padding: 12px 16px 16px; }
+  dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin: 0 0 12px; }
+  dt { color: var(--muted); } dd { margin: 0; word-break: break-all; }
+  pre { background: var(--chip); border-radius: 6px; padding: 10px; overflow: auto; max-height: 300px;
+        margin: 6px 0 0; }
+  .msg { color: var(--danger); min-height: 1.4em; margin-top: 8px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>JobKeep</h1>
+  <span class="status" id="status">loading…</span>
+</header>
+<main>
+  <div class="cards" id="cards"></div>
+  <div class="filters">
+    <input id="queue" placeholder="Queue" aria-label="Filter by queue">
+    <input id="jobType" placeholder="Job type" aria-label="Filter by job type">
+    <button class="btn" id="clear">Clear filters</button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>Job</th><th>Type</th><th>Queue</th><th>State</th><th>Attempt</th>
+        <th>Run at</th><th>Updated</th><th>Last error</th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div class="empty" id="empty" hidden>No jobs match.</div>
+  </div>
+  <div class="pager">
+    <button class="btn" id="prev">Newer</button>
+    <button class="btn" id="next">Older</button>
+    <span id="page"></span>
+  </div>
+</main>
+
+<dialog id="detail">
+  <div class="dlg-head">
+    <h2 id="dTitle"></h2>
+    <button class="btn" id="dRequeue">Requeue</button>
+    <button class="btn danger" id="dDelete">Delete</button>
+    <button class="btn" id="dClose" aria-label="Close">✕</button>
+  </div>
+  <div class="dlg-body">
+    <dl id="dFields"></dl>
+    <div>Payload</div>
+    <pre class="mono" id="dPayload"></pre>
+    <div class="msg" id="dMsg"></div>
+  </div>
+</dialog>
+
+<script>
+(() => {
+  "use strict";
+  const STATES = ["enqueued", "scheduled", "awaiting", "processing", "succeeded", "failed", "deleted"];
+  const PAGE = 50;
+  // Works whether the dashboard is mounted at "/", "/jobs" or "/jobs/".
+  const base = location.pathname.endsWith("/") ? location.pathname : location.pathname + "/";
+  const $ = (id) => document.getElementById(id);
+  const filter = { state: null, offset: 0 };
+  let current = null;
+
+  const el = (tag, opts = {}, ...children) => {
+    const node = document.createElement(tag);
+    if (opts.className) node.className = opts.className;
+    if (opts.title) node.title = opts.title;
+    for (const child of children) node.append(child);
+    return node;
+  };
+  const fmtTime = (iso) => iso ? new Date(iso).toLocaleString() : "—";
+  const short = (id) => id.slice(-12);
+
+  async function api(path, options = {}) {
+    const res = await fetch(base + path, options);
+    if (res.status === 204) return null;
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || res.statusText);
+    return body;
+  }
+
+  function renderCards(stats) {
+    const cards = $("cards");
+    cards.replaceChildren();
+    const all = STATES.reduce((n, s) => n + (stats.counts[s] || 0), 0);
+    const make = (state, label, n) => {
+      const card = el("button", { className: "card" + (filter.state === state ? " active" : "") },
+        el("div", { className: "n" }, String(n)), el("div", { className: "label" }, label));
+      card.addEventListener("click", () => { filter.state = state; filter.offset = 0; refresh(); });
+      return card;
+    };
+    cards.append(make(null, "all", all));
+    for (const s of STATES) cards.append(make(s, s, stats.counts[s] || 0));
+  }
+
+  function renderRows(jobs) {
+    const rows = $("rows");
+    rows.replaceChildren();
+    $("empty").hidden = jobs.length > 0;
+    for (const job of jobs) {
+      const tr = el("tr", {},
+        el("td", { className: "mono", title: job.id }, short(job.id)),
+        el("td", {}, job.job_type),
+        el("td", {}, job.queue),
+        el("td", {}, el("span", { className: "state " + job.state }, job.state)),
+        el("td", {}, `${job.attempt} / ${job.max_attempts}`),
+        el("td", {}, fmtTime(job.run_at)),
+        el("td", {}, fmtTime(job.updated_at)),
+        el("td", { className: "err", title: job.last_error || "" }, job.last_error || ""));
+      tr.addEventListener("click", () => openDetail(job));
+      rows.append(tr);
+    }
+    $("prev").disabled = filter.offset === 0;
+    $("next").disabled = jobs.length < PAGE;
+    $("page").textContent = jobs.length
+      ? `${filter.offset + 1}–${filter.offset + jobs.length}` : "";
+  }
+
+  async function refresh() {
+    const params = new URLSearchParams({ limit: PAGE, offset: filter.offset });
+    if (filter.state) params.set("state", filter.state);
+    if ($("queue").value.trim()) params.set("queue", $("queue").value.trim());
+    if ($("jobType").value.trim()) params.set("job_type", $("jobType").value.trim());
+    try {
+      const [stats, jobs] = await Promise.all([api("api/stats"), api("api/jobs?" + params)]);
+      renderCards(stats);
+      renderRows(jobs);
+      $("status").textContent = "updated " + new Date().toLocaleTimeString();
+    } catch (e) {
+      $("status").textContent = "error: " + e.message;
+    }
+  }
+
+  function openDetail(job) {
+    current = job;
+    $("dTitle").textContent = `${job.job_type} · ${job.id}`;
+    const fields = [
+      ["State", job.state], ["Queue", job.queue], ["Priority", job.priority],
+      ["Attempt", `${job.attempt} / ${job.max_attempts}`], ["Run at", fmtTime(job.run_at)],
+      ["Created", fmtTime(job.created_at)], ["Updated", fmtTime(job.updated_at)],
+      ["Worker", job.worker || "—"], ["Lease expires", fmtTime(job.lease_expires_at)],
+      ["Parent", job.parent || "—"], ["Unique key", job.unique_key || "—"],
+      ["Last error", job.last_error || "—"],
+    ];
+    const dl = $("dFields");
+    dl.replaceChildren();
+    for (const [k, v] of fields) dl.append(el("dt", {}, k), el("dd", {}, String(v)));
+    $("dPayload").textContent = JSON.stringify(job.payload, null, 2);
+    $("dRequeue").disabled = !["succeeded", "failed", "deleted"].includes(job.state);
+    $("dDelete").disabled = job.state === "deleted";
+    $("dMsg").textContent = "";
+    if (!$("detail").open) $("detail").showModal();
+  }
+
+  async function act(action) {
+    if (!current) return;
+    if (action === "delete" && !confirm("Delete this job?")) return;
+    try {
+      await api(`api/jobs/${current.id}/${action}`, {
+        method: "POST", headers: { "x-jobkeep-action": action },
+      });
+      openDetail(await api(`api/jobs/${current.id}`));
+      refresh();
+    } catch (e) {
+      $("dMsg").textContent = e.message;
+    }
+  }
+
+  $("dRequeue").addEventListener("click", () => act("requeue"));
+  $("dDelete").addEventListener("click", () => act("delete"));
+  $("dClose").addEventListener("click", () => $("detail").close());
+  $("prev").addEventListener("click", () => { filter.offset = Math.max(0, filter.offset - PAGE); refresh(); });
+  $("next").addEventListener("click", () => { filter.offset += PAGE; refresh(); });
+  $("clear").addEventListener("click", () => {
+    $("queue").value = ""; $("jobType").value = ""; filter.state = null; filter.offset = 0; refresh();
+  });
+  let typing;
+  for (const id of ["queue", "jobType"]) {
+    $(id).addEventListener("input", () => {
+      clearTimeout(typing);
+      typing = setTimeout(() => { filter.offset = 0; refresh(); }, 250);
+    });
+  }
+
+  refresh();
+  setInterval(() => { if (!document.hidden) refresh(); }, 3000);
+})();
+</script>
+</body>
+</html>

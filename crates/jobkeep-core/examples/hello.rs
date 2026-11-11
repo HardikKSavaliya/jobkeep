@@ -1,10 +1,10 @@
 //! Scratch check of the `Job` API: a hand-written job (no macro), a JSON
-//! round trip, and a direct call to `run`.
+//! round trip, and running it by name through the `Registry`.
 //!
 //! Run with `cargo run -p jobkeep-core --example hello`.
 
 use anyhow::Context;
-use jobkeep_core::{CancellationToken, Job, JobContext, JobError, JobId, NewJob, Queue};
+use jobkeep_core::{CancellationToken, Job, JobContext, JobError, JobId, NewJob, Queue, Registry};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -60,13 +60,21 @@ async fn main() -> anyhow::Result<()> {
         new_job.job_type, new_job.queue, new_job.max_attempts, new_job.payload
     );
 
-    // What a worker would do after fetching the row: look up the type by
-    // name, deserialize the payload and run it.
-    assert_eq!(new_job.job_type, SendEmail::NAME);
-    let fetched: SendEmail = serde_json::from_value(new_job.payload)?;
+    // What a worker does after fetching the row: the registry looks up the
+    // type by name, deserializes the payload and runs it.
+    let mut registry = Registry::new();
+    registry.register::<SendEmail>()?;
 
-    let ctx = JobContext::new(JobId::new(), 1, CancellationToken::new());
-    fetched.run(&ctx).await?;
+    let ctx = || JobContext::new(JobId::new(), 1, CancellationToken::new());
+    registry
+        .run(&new_job.job_type, new_job.payload.clone(), ctx())
+        .await?;
+
+    let unknown = registry.run("resize_image", new_job.payload, ctx()).await;
+    println!("unknown type -> {}", unknown.unwrap_err());
+
+    // Direct calls, for the failure paths.
+    let ctx = ctx();
 
     // Failure paths.
     let bad = SendEmail {
@@ -79,7 +87,7 @@ async fn main() -> anyhow::Result<()> {
     }
 
     ctx.cancellation.cancel();
-    match fetched.run(&ctx).await {
+    match job.run(&ctx).await {
         Err(e) => println!("after cancel -> {e}"),
         Ok(()) => unreachable!(),
     }

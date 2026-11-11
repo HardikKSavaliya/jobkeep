@@ -1,4 +1,4 @@
-//! Identity types: [`JobId`], [`Queue`] and [`Priority`].
+//! Identity types: [`JobId`], [`WorkerId`], [`Queue`] and [`Priority`].
 
 use std::fmt;
 use std::str::FromStr;
@@ -63,6 +63,41 @@ impl From<JobId> for Uuid {
     }
 }
 
+/// Identifies one worker process (a running server). Used to own leases on
+/// the jobs it is running.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct WorkerId(Uuid);
+
+impl WorkerId {
+    /// Generates a new worker id.
+    pub fn new() -> Self {
+        Self(Uuid::now_v7())
+    }
+
+    /// Wraps an existing UUID, e.g. one loaded from storage.
+    pub const fn from_uuid(uuid: Uuid) -> Self {
+        Self(uuid)
+    }
+
+    /// Returns the underlying UUID.
+    pub const fn as_uuid(&self) -> &Uuid {
+        &self.0
+    }
+}
+
+impl Default for WorkerId {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl fmt::Display for WorkerId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
 /// Name of the queue a job is placed on. Workers subscribe to one or more queues.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(transparent)]
@@ -89,7 +124,7 @@ impl Default for Queue {
 
 impl fmt::Display for Queue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.0)
+        f.pad(&self.0)
     }
 }
 

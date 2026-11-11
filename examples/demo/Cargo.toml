@@ -1,0 +1,33 @@
+[package]
+name = "jobkeep-demo"
+description = "Sample app: add jobs from a web page, run them, and review them in the JobKeep dashboard"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+jobkeep-core = { workspace = true, features = ["macros"] }
+jobkeep-client.workspace = true
+jobkeep-server.workspace = true
+jobkeep-postgres.workspace = true
+jobkeep-dashboard.workspace = true
+axum.workspace = true
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "net", "signal", "time"] }
+anyhow.workspace = true
+chrono.workspace = true
+serde.workspace = true
+uuid.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+[dev-dependencies]
+jobkeep-memory.workspace = true
+tower.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

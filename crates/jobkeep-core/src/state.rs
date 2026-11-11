@@ -15,6 +15,7 @@
 //! ```
 
 use std::fmt;
+use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 
@@ -91,9 +92,25 @@ impl State {
     }
 }
 
+/// Returned when parsing an unknown state name.
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+#[error("unknown job state {0:?}")]
+pub struct ParseStateError(pub String);
+
+impl FromStr for State {
+    type Err = ParseStateError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        State::ALL
+            .into_iter()
+            .find(|state| state.as_str() == s)
+            .ok_or_else(|| ParseStateError(s.to_owned()))
+    }
+}
+
 impl fmt::Display for State {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.as_str())
+        f.pad(self.as_str())
     }
 }
 
@@ -142,6 +159,19 @@ mod tests {
         for s in State::ALL {
             assert!(!s.can_transition_to(s), "{s} -> {s}");
         }
+    }
+
+    #[test]
+    fn display_honours_padding() {
+        assert_eq!(format!("[{:<10}]", State::Failed), "[failed    ]");
+    }
+
+    #[test]
+    fn parses_names() {
+        for s in State::ALL {
+            assert_eq!(s.as_str().parse::<State>(), Ok(s));
+        }
+        assert!("Enqueued".parse::<State>().is_err());
     }
 
     #[test]

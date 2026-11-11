@@ -4,6 +4,7 @@
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
 use std::fmt;
+use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
 use serde::Serialize;
@@ -43,11 +44,13 @@ pub struct JobContext {
     pub job_id: JobId,
     /// Which attempt this is, starting at 1.
     pub attempt: u32,
-    /// Fires when the job is deleted or the server is shutting down.
+    /// Fires when the job is deleted, its lease is lost, or the server is
+    /// shutting down.
     /// Long-running jobs should check it and return [`JobError::Cancelled`].
     pub cancellation: CancellationToken,
-    /// Shared services (database pools, HTTP clients, ...) registered on the server.
-    pub extensions: Extensions,
+    /// Shared services (database pools, HTTP clients, ...) registered on the
+    /// server. One map is shared by every job the server runs.
+    pub extensions: Arc<Extensions>,
 }
 
 impl JobContext {
@@ -56,8 +59,14 @@ impl JobContext {
             job_id,
             attempt,
             cancellation,
-            extensions: Extensions::default(),
+            extensions: Arc::default(),
         }
+    }
+
+    /// Replaces the shared services available to the job.
+    pub fn with_extensions(mut self, extensions: Arc<Extensions>) -> Self {
+        self.extensions = extensions;
+        self
     }
 
     /// Returns whether cancellation has been requested.
@@ -117,22 +126,32 @@ pub struct NewJob {
     pub payload: serde_json::Value,
     pub queue: Queue,
     pub priority: Priority,
-    /// When the job should first run. A time in the past means "now".
-    pub run_at: DateTime<Utc>,
+    /// When the job should first run. `None` (the default) or a time in the
+    /// past means as soon as possible. "Now" is decided by the backend's
+    /// clock, so a slightly fast application clock can't delay jobs.
+    pub run_at: Option<DateTime<Utc>>,
     pub max_attempts: u32,
+    /// Makes this a continuation of another job: it runs only after the
+    /// parent succeeds. See [`Storage`](crate::Storage) for the rules.
+    pub parent: Option<JobId>,
+    /// Deduplication key. Enqueueing a job whose key is already taken
+    /// returns the existing job instead of storing a new one.
+    pub unique_key: Option<String>,
 }
 
 impl NewJob {
     /// Builds a record from a typed job, using the job's queue and
-    /// attempt defaults, normal priority, and `run_at = now`.
+    /// attempt defaults, normal priority, and no `run_at` (run now).
     pub fn from_job<J: Job>(job: &J) -> serde_json::Result<Self> {
         Ok(Self {
             job_type: J::NAME.to_owned(),
             payload: serde_json::to_value(job)?,
             queue: J::queue(),
             priority: Priority::default(),
-            run_at: Utc::now(),
+            run_at: None,
             max_attempts: J::max_attempts(),
+            parent: None,
+            unique_key: None,
         })
     }
 
@@ -147,7 +166,7 @@ impl NewJob {
     }
 
     pub fn with_run_at(mut self, run_at: DateTime<Utc>) -> Self {
-        self.run_at = run_at;
+        self.run_at = Some(run_at);
         self
     }
 
@@ -155,6 +174,24 @@ impl NewJob {
         self.max_attempts = max_attempts;
         self
     }
+
+    pub fn with_parent(mut self, parent: JobId) -> Self {
+        self.parent = Some(parent);
+        self
+    }
+
+    pub fn with_unique_key(mut self, key: impl Into<String>) -> Self {
+        self.unique_key = Some(key.into());
+        self
+    }
+}
+
+/// A job that runs on a cron schedule. Implemented by `#[recurring]`.
+///
+/// The schedule uses the `cron` crate's format, with a leading seconds
+/// field: `"sec min hour day-of-month month day-of-week [year]"`, in UTC.
+pub trait Recurring: Job + Default {
+    const SCHEDULE: &'static str;
 }
 
 #[cfg(test)]

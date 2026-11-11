@@ -1,0 +1,14 @@
+# Postgres for the demo: `docker compose up -d` from this directory.
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: jobkeep
+      POSTGRES_PASSWORD: jobkeep
+      POSTGRES_DB: jobkeep_demo
+    ports:
+      - "55433:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "jobkeep"]
+      interval: 2s
+      retries: 15

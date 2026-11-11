@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/*"]
+members = ["crates/*", "examples/*"]
 
 # Shared metadata — members opt in with `field.workspace = true`
 [workspace.package]
@@ -52,6 +52,7 @@ dashmap = { version = "6" }
 # ── web dashboard ──
 axum      = { version = "0.8" }
 tower-http = { version = "0.6", features = ["trace", "cors"] }
+tower     = { version = "0.5", features = ["util"] }
 
 # ── cli ──
 clap = { version = "4", features = ["derive", "env"] }
